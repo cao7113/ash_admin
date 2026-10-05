@@ -223,6 +223,11 @@ and then configure it like so
 config :ash_admin, :actor_plug, MyAppWeb.AshAdminActorPlug
 ```
 
+### Sidebar customization
+
+For authentication, Actor selector visibility, custom sidebar links and footer configuration,
+see the [Admin authentication and sidebar extension guide](../../notes/auth-and-sidebar-extension.md).
+
 ### Content Security Policy
 
 If your app specifies a content security policy header, eg. via

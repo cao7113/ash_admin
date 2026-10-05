@@ -15,7 +15,7 @@ defmodule Demo.Seeder do
       last_name: last_name,
       admin: true,
       preferences: Preferences.new!([])
-    })
+    }, tenant: "foo")
   end
 
   @spec insert_user!(String.t(), String.t(), String.t(), String.t(), String.t()) :: User.t()
@@ -30,7 +30,7 @@ defmodule Demo.Seeder do
       api_key: api_key,
       alternate_profiles: [],
       preferences: Preferences.new!([])
-    })
+    }, tenant: "foo")
   end
 
   @spec insert_customer!(String.t(), String.t()) :: Customer.t()
@@ -70,7 +70,7 @@ defmodule Demo.Seeder do
   end
 
   def arguments("--truncate") do
-    [Ticket, Organization, User]
+    [Ticket, User, Organization]
     |> Enum.map(&truncate/1)
   end
 

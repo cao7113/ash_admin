@@ -58,6 +58,19 @@ defmodule AshAdmin.Router do
 
     * `:session` - Optional extra session map or MFA tuple to be merged with the session.
 
+    * `:show_actor_selector` - Whether to show the Actor and authorization controls in the sidebar.
+      Defaults to `true`.
+
+    * `:sidebar_links` - A list of application navigation link maps. Each entry requires a string
+      `:label` and `:url`. Links use `href` by default; set `navigate: true` for a path inside the
+      AshAdmin LiveView session, or `new_tab: true` to open an HTTP(S) link in a new tab.
+      A Home link to the host application's public homepage (`/`) is included by default.
+
+    * `:sidebar_footer` - Optional module exporting a Phoenix function component named
+      `user_panel/1`. It is rendered in the sidebar footer for advanced customization and
+      receives `current_user`, `prefix`, `current_path`, and `variant` assigns. Defaults to an
+      empty component.
+
     * `:csp_nonce_assign_key` - Optional assign key to find the CSP nonce value used for assets
       Supports either `atom()` or
         `%{optional(:img) => atom(), optional(:script) => atom(), optional(:style) => atom()}`
@@ -103,10 +116,23 @@ defmodule AshAdmin.Router do
             Map.take(keys, [:img, :style, :script])
         end
 
+      show_actor_selector = Keyword.get(opts, :show_actor_selector, true)
+      sidebar_footer = Keyword.get(opts, :sidebar_footer)
+      sidebar_links = Keyword.get(opts, :sidebar_links, [])
+
       live_session opts[:live_session_name] || :ash_admin,
         on_mount: List.wrap(opts[:on_mount]),
         session:
-          {AshAdmin.Router, :__session__, [%{"prefix" => path}, List.wrap(opts[:session])]},
+          {AshAdmin.Router, :__session__,
+           [
+             %{
+               "prefix" => path,
+               "show_actor_selector" => show_actor_selector,
+               "sidebar_footer" => sidebar_footer,
+               "sidebar_links" => sidebar_links
+             },
+             List.wrap(opts[:session])
+           ]},
         root_layout: {AshAdmin.Layouts, :root} do
         live(
           "#{path}/*route",
@@ -146,9 +172,11 @@ defmodule AshAdmin.Router do
     Enum.reduce(@cookies_to_replicate, session, fn cookie, session ->
       case conn.req_cookies[cookie] do
         value when value in [nil, "", "null"] ->
+          IO.puts("#{cookie} value is nil or empty")
           Map.put(session, cookie, nil)
 
         value ->
+          IO.puts("#{cookie} value is not nil or empty [#{value}]")
           Map.put(session, cookie, value)
       end
     end)

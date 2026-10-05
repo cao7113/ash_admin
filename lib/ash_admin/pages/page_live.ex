@@ -17,6 +17,18 @@ defmodule AshAdmin.PageLive do
 
   require Logger
 
+  attr :module, :atom, required: true
+  attr :current_user, :any, default: nil
+  attr :prefix, :string, required: true
+  attr :current_path, :string, default: nil
+  attr :variant, :atom, required: true
+
+  def dynamic_component(assigns) do
+    {module, assigns} = Map.pop(assigns, :module)
+
+    apply(module, :user_panel, [assigns])
+  end
+
   def mount(socket) do
     {:ok, socket}
   end
@@ -55,31 +67,44 @@ defmodule AshAdmin.PageLive do
         []
       end
 
-    {:ok,
-     socket
-     |> assign(:prefix, prefix)
-     |> assign(:primary_key, nil)
-     |> assign(:record, nil)
-     |> assign(:domains, domains)
-     |> assign(:tenant, session["tenant"])
-     |> assign(:tenant_label, nil)
-     |> assign(:editing_tenant, false)
-     |> assign(:tenant_mode, tenant_mode)
-     |> assign(:tenant_options, tenant_options)
-     |> assign(:tenant_suggestions, [])
-     |> assign(:sidebar_open, false)
-     |> then(fn socket ->
-       assign(socket, AshAdmin.ActorPlug.actor_assigns(socket, session))
-     end)
-     |> assign_new(:actor_domain, fn -> nil end)
-     |> assign_new(:actor_resources, fn -> [] end)
-     |> assign_new(:authorizing, fn -> true end)
-     |> assign_new(:actor_paused, fn -> false end)
-     |> assign_new(:actor_tenant, fn -> nil end)}
+    socket =
+      socket
+      |> assign(:prefix, prefix)
+      |> assign(:primary_key, nil)
+      |> assign(:record, nil)
+      |> assign(:domains, domains)
+      |> assign(:tenant, session["tenant"])
+      |> assign(:tenant_label, nil)
+      |> assign(:editing_tenant, false)
+      |> assign(:tenant_mode, tenant_mode)
+      |> assign(:tenant_options, tenant_options)
+      |> assign(:tenant_suggestions, [])
+      |> assign(:sidebar_open, false)
+      |> assign(:show_actor_selector, session["show_actor_selector"] != false)
+      |> assign(
+        :sidebar_footer,
+        session["sidebar_footer"] || AshAdmin.Components.Sidebar.Footer
+      )
+      |> assign(:sidebar_links, session["sidebar_links"] || [])
+      |> assign_new(:current_user, fn -> nil end)
+      |> then(fn socket ->
+        assign(socket, AshAdmin.ActorPlug.actor_assigns(socket, session))
+      end)
+      |> assign_new(:actor_domain, fn -> nil end)
+      |> assign_new(:actor_resources, fn -> [] end)
+      |> assign_new(:authorizing, fn -> true end)
+      |> assign_new(:actor_paused, fn -> false end)
+      |> assign_new(:actor_tenant, fn -> nil end)
+
+    # socket.assigns |> dbg
+
+    {:ok, socket}
   end
 
   @impl true
   def render(assigns) do
+    IO.puts("==PageLive render")
+
     ~H"""
     <div class="flex h-full bg-slate-50 dark:bg-slate-950">
       <.live_component
@@ -89,7 +114,10 @@ defmodule AshAdmin.PageLive do
         domain={@domain}
         resource={@resource}
         prefix={@prefix}
+        current_path={@url_path}
+        sidebar_links={@sidebar_links}
         open={@sidebar_open}
+        show_actor_selector={@show_actor_selector}
         actor={@actor}
         actor_domain={@actor_domain}
         actor_resources={@actor_resources}
@@ -102,7 +130,17 @@ defmodule AshAdmin.PageLive do
         tenant_options={@tenant_options}
         tenant_suggestions={@tenant_suggestions}
         editing_tenant={@editing_tenant}
-      />
+      >
+        <:footer :let={footer}>
+          <.dynamic_component
+            module={@sidebar_footer}
+            current_user={@current_user}
+            prefix={@prefix}
+            current_path={@url_path}
+            variant={footer.variant}
+          />
+        </:footer>
+      </.live_component>
       <%!-- Mobile backdrop --%>
       <div
         :if={@sidebar_open}

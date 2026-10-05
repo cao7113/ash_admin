@@ -79,6 +79,14 @@ defmodule Demo.Tickets.Ticket do
       end
     end
 
+    action :testonly, :string do
+      argument :test_arg, :string
+
+      run fn input, context ->
+        {:ok, "test only: #{input.arguments.test_arg}"}
+      end
+    end
+
     read :assigned do
       filter representative: actor(:id)
       pagination offset?: true, countable: true, required?: false, default_limit: 25
