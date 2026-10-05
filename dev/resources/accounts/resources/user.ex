@@ -23,7 +23,8 @@ defmodule Demo.Accounts.User do
     end
 
     show_action :read
-    read_actions [:me, :read, :by_id, :by_name]
+    # read_actions [:me, :read, :by_id, :by_name]
+    read_actions [:read, :me, :by_id, :by_name]
 
     table_columns [:id, :first_name, :last_name, :representative, :admin, :full_name, :api_key, :date_of_birth]
     table_filterable_columns [:first_name]
@@ -32,11 +33,11 @@ defmodule Demo.Accounts.User do
     show_calculations [:multi_arguments, :is_super_admin?, :full_name, :nested_embed]
   end
 
-  multitenancy do
-    strategy :attribute
-    attribute :org
-    global? true
-  end
+  # multitenancy do
+  #   strategy :attribute
+  #   attribute :org
+  #   global? true
+  # end
 
   policies do
     bypass always() do
@@ -50,8 +51,9 @@ defmodule Demo.Accounts.User do
 
   actions do
     default_accept :*
-    read :me, filter: [id: actor(:id)]
+
     read :read, primary?: true
+    read :me, filter: [id: actor(:id)]
     read :by_id do
       argument :id, :uuid
 
@@ -200,7 +202,9 @@ defmodule Demo.Accounts.User do
       public? true
     end
 
-    attribute :org, :string
+    attribute :org, :string do
+      default ""
+    end
 
     timestamps()
   end

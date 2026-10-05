@@ -8,7 +8,10 @@ defmodule AshAdmin.Components.Sidebar do
   attr :domain, :any, required: true
   attr :resource, :any, required: true
   attr :prefix, :any, required: true
+  attr :current_path, :string, default: nil
+  attr :sidebar_links, :list, default: []
   attr :open, :boolean, default: false
+  attr :show_actor_selector, :boolean, default: true
 
   # Actor/auth/tenant assigns
   attr :actor, :any, default: nil
@@ -24,6 +27,10 @@ defmodule AshAdmin.Components.Sidebar do
   attr :tenant_suggestions, :list, default: []
   attr :editing_tenant, :boolean, default: false
   attr :variant, :atom, default: :desktop
+
+  slot :footer do
+    attr :variant, :atom
+  end
 
   def render(assigns) do
     ~H"""
@@ -106,13 +113,19 @@ defmodule AshAdmin.Components.Sidebar do
           </div>
         </div>
       </div>
+
+      <AshAdmin.Components.Sidebar.Links.application_links
+        prefix={@prefix}
+        current_path={@current_path}
+        links={@sidebar_links}
+      />
     </nav>
 
     <%!-- Status Panel --%>
     <div class="border-t border-slate-700/50 px-3 py-3 space-y-2">
       <%!-- Actor --%>
       <div
-        :if={@actor_resources != []}
+        :if={@show_actor_selector && @actor_resources != []}
         id={"sidebar-actor-#{@variant}"}
         phx-hook="Actor"
         class="space-y-1.5"
@@ -162,7 +175,7 @@ defmodule AshAdmin.Components.Sidebar do
       </div>
 
       <%!-- Authorizing --%>
-      <div :if={@actor_resources != []} class="flex items-center gap-2">
+      <div :if={@show_actor_selector && @actor_resources != []} class="flex items-center gap-2">
         <button
           type="button"
           phx-click="toggle_authorizing"
@@ -190,6 +203,8 @@ defmodule AshAdmin.Components.Sidebar do
         </div>
         {render_tenant(assigns)}
       </div>
+
+      {render_slot(@footer, %{variant: @variant})}
     </div>
     """
   end

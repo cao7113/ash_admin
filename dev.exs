@@ -26,7 +26,8 @@ defmodule DemoWeb.Router do
     pipe_through :browser
     import AshAdmin.Router
 
-    ash_admin("/")
+    ash_admin("/", sidebar_links: [%{
+      label: "Dashboard", url: "/admin"}])
   end
 end
 
@@ -50,13 +51,13 @@ end
 
 Application.ensure_all_started(:os_mon)
 Application.put_env(:phoenix, :serve_endpoints, true)
-  :erlang.system_flag(:backtrace_depth, 100)
+:erlang.system_flag(:backtrace_depth, 100)
 
 Task.start(fn ->
   children = [
     Demo.Repo,
     DemoWeb.Endpoint,
-    {Phoenix.PubSub, [name: Demo.PubSub, adapter: Phoenix.PubSub.PG2]},
+    {Phoenix.PubSub, [name: Demo.PubSub, adapter: Phoenix.PubSub.PG2]}
   ]
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)

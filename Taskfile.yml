@@ -1,0 +1,33 @@
+# https://taskfile.dev/docs/guide
+# https://taskfile.dev/reference/templating/
+version: '3'
+tasks:
+  default: mix test
+  fmt: mix format
+  sh: iex --erl "-kernel shell_history enabled" -S mix
+  run: 
+    aliases: [dev]
+    cmds:
+      - |
+        # mix dev
+        iex --erl "-kernel shell_history enabled" -S mix run --no-halt dev.exs --config config
+
+  mig: mix migrate
+  gen.mig: mix generate_migrations
+  sql: psql ash_admin_dev
+  db.create: mix ash_postgres.create
+  db.setup: |
+    mix ash_postgres.create
+    mix migrate
+    mix seed
+    # mix run dev/repo/seeds.exs # --truncate
+  db.reset: |
+    mix ecto.drop
+    task db.setup
+
+  asset: mix assets.deploy
+
+  setup: |
+    # mix migrate
+    # mix migrate_tenants
+    mix setup

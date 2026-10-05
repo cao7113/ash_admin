@@ -20,12 +20,74 @@ defmodule AshAdmin.Test.PageLiveTest do
     assert html =~ "Attributes"
     assert html =~ "body"
     assert html =~ "String"
+    assert html =~ "sidebar-actor-desktop"
+
+    nav_html =
+      html
+      |> Floki.parse_document!()
+      |> Floki.find("nav")
+      |> hd()
+      |> Floki.raw_html()
+
+    assert index_of!(nav_html, "phx-click=\"toggle_domain\"") < index_of!(nav_html, "href=\"/\"")
+    assert nav_html =~ "Application links"
+    assert index_of!(nav_html, "Application links") < index_of!(nav_html, "Home")
 
     {:ok, _view, html} = live(conn, "/api/admin/test")
 
     assert html =~ "Attributes"
     assert html =~ "body"
     assert html =~ "String"
+  end
+
+  test "supports hiding actor controls and rendering a custom sidebar footer", %{conn: conn} do
+    {:ok, _view, html} = live(conn, "/api/sidebar-extension/admin")
+
+    refute html =~ "sidebar-actor-desktop"
+    refute html =~ "sidebar-actor-mobile"
+    refute html =~ "Auth enforced"
+    assert "Reports" in active_sidebar_links(html)
+
+    nav_html =
+      html
+      |> Floki.parse_document!()
+      |> Floki.find("nav")
+      |> hd()
+      |> Floki.raw_html()
+
+    assert index_of!(nav_html, "phx-click=\"toggle_domain\"") <
+             index_of!(nav_html, "Application links")
+
+    assert index_of!(nav_html, "Application links") < index_of!(nav_html, "Home")
+    assert index_of!(nav_html, "Home") < index_of!(nav_html, "Reports")
+    assert index_of!(nav_html, "Reports") < index_of!(nav_html, "Docs")
+
+    assert nav_html =~
+             ~s|href="/api/sidebar-extension/admin?tab=reports" data-phx-link="redirect"|
+
+    assert nav_html =~
+             ~s|href="https://example.com/docs" target="_blank" rel="noopener noreferrer"|
+
+    assert nav_html =~ ~s|aria-current="page"|
+    assert html =~ ~s|id="custom-sidebar-footer-desktop">admin@example.com|
+    assert html =~ ~s|id="custom-sidebar-footer-mobile">admin@example.com|
+  end
+
+  test "sidebar footer provides an empty default function component" do
+    assert %Phoenix.LiveView.Rendered{} =
+             AshAdmin.Components.Sidebar.Footer.user_panel(%{})
+  end
+
+  defp active_sidebar_links(html) do
+    html
+    |> Floki.parse_document!()
+    |> Floki.find("nav a[aria-current=page]")
+    |> Enum.map(&(Floki.text(&1) |> String.trim()))
+  end
+
+  defp index_of!(string, substring) do
+    {index, _length} = :binary.match(string, substring)
+    index
   end
 
   test "generates a fresh per-request csp nonce (never the old published constant)" do
